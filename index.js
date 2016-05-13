@@ -38,34 +38,48 @@ var letters = 'abcdefghijklmnopqrstuvwxyz';
 function practice(subject, max_results) {
   var questions = [];
 
+  // question number cuonter
   var n = 0;
 
+  // load next question from questions array above
   function nextQuestion() {
     $('#check').removeClass('hide');
     $('#next').addClass('hide');
     $('#quizwebsite-subject-modal').addClass('hide');
     $('#quizwebsite-question-modal').removeClass('hide');
+
+    // check if there are questions left
     if (questions.length > 0) {
+      // load last question
       loadQuestion(questions.pop());
-      n+=1;
-      $("#question-nums").text(n + " of " + max_results + " questions");
+
+      $("#progress").css("width", n / max_results * 100 + "%");
+
+        n+=1;
     } else {
-      // TODO: add status page?
       home();
     }
   }
 
+  // remove old next button handlers
   $('#next').off('click');
   $('#next').click(function() {
     nextQuestion();
   });
 
+  // load question into question modal
   function loadQuestion(question) {
+    // remove old button handlers
     $('#check').off('click');
     $('#check').click(function() {
       var answer = $('.quizz-question-answer-selected .quizz-question-answer-answer').first().text();
+
+      // check the question that has been loaded
       $.post('check-question.php', {id: question.id, answer: answer}, function(data) {
+        // update correct/incorrect stat
         $('#score').text(Math.round(data.correct / (data.correct + data.incorrect) * 100) + '% correct');
+
+        // success is true when we got the question correct
         if (data.success) {
           $('#next').removeClass('hide');
           $('#check').addClass('hide');
@@ -81,7 +95,10 @@ function practice(subject, max_results) {
       }, 'json');
     })
 
+    // remove old question info
     $('#quizz-questions').empty();
+
+    // add each answer to page
     question.answers.forEach(function(answer, i) {
       var letter = letters[i];
       $('<div class="quizz-question-answer">' +
@@ -99,17 +116,25 @@ function practice(subject, max_results) {
       })
       .appendTo('#quizz-questions');
     });
+
+    // put in the question text
     $('#quizz-question-header').text(question.question);
   }
 
+  // load the questions
   $.getJSON('get-questions.php?max_results=' + max_results + '&subject=' + subject.subject)
   .done(function(data) {
     questions = data.questions;
+
+    // check if we got any questions
     if (questions.length == 0) {
       home();
       alert("no questions for that subject");
     } else {
+      // update in case we didn't get as many questions as we asked for
       max_results = questions.length;
+
+      // load the next question in questions
       nextQuestion();
     }
   });
@@ -117,28 +142,36 @@ function practice(subject, max_results) {
 
 // called when user has successfully logged in
 function login_success() {
+  // get the user info
   $.getJSON('user.php')
   .done(function(data) {
+    // update score stats
     $('#score').text(Math.round(data.correct / (data.correct + data.incorrect) * 100) + '% correct');
+
+    // set the user name of navbar
     $('#user-name-nav').text(data.user);
   });
 
+  // remove old modals
   $('#quizwebsite-login').addClass('hide');
   $('#quizwebsite-subject-modal').removeClass('hide');
+
+  // load available subjects
   $.getJSON('subjects.php')
   .done(function(data) {
     $('#subjects').empty();
+
+    // load the subjects for each
     data.subjects.forEach(function(subject) {
       var el = $('<div class="panel-body">' +
         '<h1>' + subject.subject + '</h1>' +
         '</div>'
       );
       var ell = $('<div class="btn-group btn-group-justified"></div>');
+
+      // pracitce modes
       $('<div class="btn-group" role="group"></div>')
-        .append($('<button type="button" class="btn btn-lg">Practice x1</button>')
-          .css('color', '#FFFFFF')
-          .css('background-color', '#F0AD4E')
-          .css('border-color', '#EEA236')
+        .append($('<button type="button" class="btn btn-warning btn-lg">Practice x1</button>')
           .click(function() {
             practice(subject, 1);
           })
@@ -150,14 +183,13 @@ function login_success() {
           })
         ).appendTo(ell);
       $('<div class="btn-group" role="group"></div>')
-        .append($('<button type="button" class="btn btn-lg">Practice x10</button>')
-          .css('color', '#FFFFFF')
-          .css('background-color', '#C9302C')
-          .css('border-color', '#AC2925')
+        .append($('<button type="button" class="btn btn-danger btn-lg">Practice x10</button>')
           .click(function() {
             practice(subject, 10);
           })
         ).appendTo(ell);
+
+      // add the group back in
       el.append(ell);
       $('<div class="panel panel-default"></div>').append(el).appendTo('#subjects');
     });
@@ -167,6 +199,8 @@ function login_success() {
 // called to login
 function login() {
   $('#login').addClass('active');
+
+  // login
   $.post('login.php', {
     name: $('#email-input').val(),
     pass: $('#password-input').val()
@@ -194,6 +228,7 @@ function home() {
   $('#quizwebsite-subject-modal').addClass('hide');
   $('#quizwebsite-question-modal').addClass('hide');
 
+  // check if we are still logged in
   $.get('login.php')
     .done(function (data) {
       if (data == 'false') {
@@ -210,4 +245,5 @@ $('#home').click(function() {
   home();
 });
 
+// start at "home"
 home();
